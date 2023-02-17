@@ -15,6 +15,7 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:Scan
+        - dynamodb:PutItem
       Resource: arn:aws:dynamodb:${env:region, 'us-east-1'}:*:table/Groups-${env:stage, 'dev'}
 
 functions:
@@ -24,6 +25,14 @@ functions:
     events:
       - httpApi:
           method: get
+          path: /groups
+          cors: true
+
+  CreateGroup:
+    handler: src/lambda/http/createGroup.handler
+    events:
+      - httpApi:
+          method: post
           path: /groups
           cors: true
 
