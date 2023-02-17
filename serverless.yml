@@ -1,0 +1,42 @@
+service: go
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+
+  stage: ${env:stage, 'dev'}
+  region: ${env:region, 'us-east-1'}
+
+  environment:
+    GROUPS_TABLE: Groups-${env:stage, 'dev'}
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Scan
+      Resource: arn:aws:dynamodb:${env:region, 'us-east-1'}:*:table/Groups-${env:stage, 'dev'}
+
+functions:
+
+  GetGroups:
+    handler: src/lambda/http/getGroups.handler
+    events:
+      - httpApi:
+          method: get
+          path: /groups
+          cors: true
+
+resources:
+  Resources:
+    GroupsDynamoDB:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: Groups-${env:stage, 'dev'}
