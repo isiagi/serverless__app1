@@ -1,6 +1,11 @@
 service: go
 frameworkVersion: '3'
 
+
+plugins:
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
+
 provider:
   name: aws
   runtime: nodejs16.x
@@ -18,6 +23,18 @@ provider:
         - dynamodb:PutItem
       Resource: arn:aws:dynamodb:${env:region, 'us-east-1'}:*:table/Groups-${env:stage, 'dev'}
 
+custom:
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: Udagram API
+        description: Serverless application for images sharing
+    models:
+      - name: GroupRequest
+        contentType: application/json
+        schema: ${file(models/create-group-request.json)}
+
 functions:
 
   GetGroups:
@@ -31,13 +48,29 @@ functions:
   CreateGroup:
     handler: src/lambda/http/createGroup.handler
     events:
-      - httpApi:
+      - http:
           method: post
           path: /groups
           cors: true
+          reqValidatorName: 'RequestBodyValidator'
+          documentation:
+            summary: Create a new group
+            description: Create a new group
+            requestModels:
+              'application/json': GroupRequest
 
 resources:
   Resources:
+
+    RequestBodyValidator:
+      Type: "AWS::ApiGateway::RequestValidator"
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
+
     GroupsDynamoDB:
       Type: AWS::DynamoDB::Table
       Properties:
